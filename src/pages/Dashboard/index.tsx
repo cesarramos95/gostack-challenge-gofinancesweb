@@ -24,9 +24,9 @@ interface Transaction {
 }
 
 interface Balance {
-  income: number;
-  outcome: number;
-  total: number;
+  income: string;
+  outcome: string;
+  total: string;
 }
 
 const Dashboard: React.FC = () => {
@@ -37,8 +37,24 @@ const Dashboard: React.FC = () => {
     async function loadTransactions(): Promise<void> {
       const response = await api.get('/transactions');
 
-      setTransactions(response.data.transactions);
-      setBalance(response.data.balance);
+      const formattedTransaction = response.data.transactions.map(
+        (transaction: Transaction) => ({
+          ...transaction,
+          formattedValue: formatValue(transaction.value),
+          formattedDate: new Date(transaction.created_at).toLocaleDateString(
+            'pt-br',
+          ),
+        }),
+      );
+
+      const formattedBalance = {
+        income: formatValue(response.data.balance.income),
+        outcome: formatValue(response.data.balance.outcome),
+        total: formatValue(response.data.balance.total),
+      };
+
+      setTransactions(formattedTransaction);
+      setBalance(formattedBalance);
     }
 
     loadTransactions();
@@ -82,16 +98,20 @@ const Dashboard: React.FC = () => {
                 <th>Data</th>
               </tr>
             </thead>
-            {transactions && (
-              <tbody>
-                <tr>
-                  <td className="title">{transactions.title}</td>
-                  <td className="outcome">{transactions.type}</td>
-                  <td>{transactions.category.title}</td>
-                  <td>{transactions.date}</td>
+
+            <tbody>
+              {transactions.map(transaction => (
+                <tr key={transaction.id}>
+                  <td className="title">{transaction.title}</td>
+                  <td className={transaction.type}>
+                    {transaction.type === 'outcome' && ' - '}
+                    {transaction.formattedValue}
+                  </td>
+                  <td>{transaction.category.title}</td>
+                  <td>{transaction.formattedDate}</td>
                 </tr>
-              </tbody>
-            )}
+              ))}
+            </tbody>
           </table>
         </TableContainer>
       </Container>
